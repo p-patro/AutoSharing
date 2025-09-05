@@ -2,6 +2,7 @@ import './styles.css';
 import { createCreateAccountPage, initializeCreateAccountPage } from './createaccount.js';
 import { createSignInPage, initializeSignInPage } from './signin.js';
 import { createPickupPage, initializePickupPage } from './pickup.js';
+import { createTravelPage, initializeTravelPage } from './travel.js';
 
 // Current page state
 let currentPage = 'createAccount';
@@ -30,10 +31,18 @@ function showPickupPage() {
   initializePickupPage();
 }
 
+// Show Travel page
+function showTravelPage() {
+  currentPage = 'travel';
+  app.innerHTML = createTravelPage();
+  initializeTravelPage();
+}
+
 // Make functions globally available
 window.showCreateAccountPage = showCreateAccountPage;
 window.showSignInPage = showSignInPage;
 window.showPickupPage = showPickupPage;
+window.showTravelPage = showTravelPage;
 
 // Initialize the app
 document.addEventListener('DOMContentLoaded', () => {

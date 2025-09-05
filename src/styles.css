@@ -821,3 +821,206 @@
     font-size: 14px;
   }
 }
+
+/* Travel page styles */
+.travel-page {
+  width: 100vw;
+  height: 100vh;
+  background: var(--white);
+  position: relative;
+}
+
+.travel-header {
+  display: flex;
+  width: 1269px;
+  height: 100px;
+  padding: 23px 20px 23px 0;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 0.5px solid #B7B8BB;
+  position: absolute;
+  left: 85px;
+  top: 0;
+}
+
+.travel-content {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  position: absolute;
+  left: 85px;
+  top: 139px;
+  width: 968px;
+}
+
+.solo-rides-section {
+  display: flex;
+  width: 968px;
+  padding: 40px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 36px;
+  border-radius: 12px;
+  background: var(--white);
+  box-shadow: 0 0 4px 0 rgba(64, 61, 57, 0.25);
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  align-self: stretch;
+}
+
+.section-title {
+  flex: 1 0 0;
+  color: var(--black);
+  font-family: Roboto, -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 70%;
+  margin: 0;
+}
+
+.rides-list {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+  align-self: stretch;
+}
+
+.ride-item {
+  display: flex;
+  padding: 5px 14px;
+  justify-content: space-between;
+  align-items: center;
+  align-self: stretch;
+  border-radius: 8px;
+  background: var(--white);
+  box-shadow: 0 0 4.8px 0 rgba(0, 0, 0, 0.25);
+}
+
+.ride-item-gray {
+  background: #F0F0F0;
+}
+
+.ride-item-orange {
+  background: #FDEFE9;
+}
+
+.ride-item-expanded {
+  background: #FDEFE9;
+  height: 134px;
+  align-items: flex-start;
+}
+
+.ride-info {
+  display: flex;
+  align-items: center;
+  gap: 240px;
+}
+
+.ride-location {
+  color: #000;
+  font-family: Roboto, -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 28px;
+}
+
+.ride-driver {
+  color: #000;
+  font-family: Roboto, -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 28px;
+}
+
+.details-button {
+  display: flex;
+  padding: 8px 12px;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  border-radius: 4px;
+  background: var(--black);
+  border: none;
+  color: var(--white);
+  font-family: Roboto, -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 70%;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.details-button:hover {
+  background: rgba(3, 6, 31, 0.8);
+}
+
+/* Travel page responsive styles */
+@media (max-width: 1200px) {
+  .travel-header {
+    width: calc(100% - 100px);
+    left: 50px;
+  }
+
+  .travel-content {
+    width: calc(100% - 100px);
+    left: 50px;
+  }
+
+  .solo-rides-section {
+    width: 100%;
+  }
+
+  .ride-info {
+    gap: 120px;
+  }
+}
+
+@media (max-width: 768px) {
+  .travel-header {
+    width: calc(100% - 40px);
+    left: 20px;
+    padding: 15px 0;
+    height: auto;
+  }
+
+  .travel-content {
+    width: calc(100% - 40px);
+    left: 20px;
+    top: 100px;
+  }
+
+  .solo-rides-section {
+    padding: 20px;
+    gap: 24px;
+  }
+
+  .section-title {
+    font-size: 20px;
+  }
+
+  .ride-info {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .ride-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .details-button {
+    align-self: flex-end;
+  }
+
+  .ride-item-expanded {
+    height: auto;
+  }
+}

@@ -151,7 +151,7 @@ export function initializePickupPage() {
     
     // Show success message
     showNotification('Ride request submitted successfully!');
-    
+
     // Here you would typically make an API call to submit the ride request
     console.log('Ride request:', {
       pickupLocation,
@@ -159,6 +159,11 @@ export function initializePickupPage() {
       pickupTime: '9:30 AM',
       numberOfPeople: parseInt(numberOfPeople)
     });
+
+    // Redirect to travel page after a short delay
+    setTimeout(() => {
+      window.showTravelPage();
+    }, 1000);
   });
   
   // Handle map button clicks
