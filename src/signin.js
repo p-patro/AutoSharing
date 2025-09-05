@@ -118,8 +118,11 @@ export function initializeSignInPage() {
       
       // Here you would typically make an API call to verify OTP
       setTimeout(() => {
-        alert('Successfully signed in!');
-        // You could redirect to dashboard or main app here
+        showNotification('Successfully signed in!');
+        // Redirect to pickup page
+        setTimeout(() => {
+          window.showPickupPage();
+        }, 1500);
       }, 1000);
     }
   });
