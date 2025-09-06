@@ -76,18 +76,36 @@ export function createPickupPage() {
               </button>
             </div>
 
-            <!-- Pick up Time -->
+            <!-- Pick up Time Range -->
             <div class="time-field">
-              <label class="time-label">Pick up Time</label>
-              <div class="time-selectors">
-                <div class="time-input-container">
-                  <button type="button" class="time-input" id="timeSelector">
-                    <span id="displayTime">9 : 30</span>
-                  </button>
+              <label class="time-label">Pick up Time Range</label>
+              <div class="time-range-container">
+                <div class="time-range-item">
+                  <label class="time-range-label">From</label>
+                  <div class="time-selectors">
+                    <div class="time-input-container">
+                      <button type="button" class="time-input" id="fromTimeSelector">
+                        <span id="displayFromTime">9 : 30</span>
+                      </button>
+                    </div>
+                    <button type="button" class="period-input" id="fromPeriodSelector">
+                      <span id="displayFromPeriod">AM</span>
+                    </button>
+                  </div>
                 </div>
-                <button type="button" class="period-input" id="periodSelector">
-                  <span id="displayPeriod">AM</span>
-                </button>
+                <div class="time-range-item">
+                  <label class="time-range-label">To</label>
+                  <div class="time-selectors">
+                    <div class="time-input-container">
+                      <button type="button" class="time-input" id="toTimeSelector">
+                        <span id="displayToTime">11 : 00</span>
+                      </button>
+                    </div>
+                    <button type="button" class="period-input" id="toPeriodSelector">
+                      <span id="displayToPeriod">AM</span>
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -121,7 +139,7 @@ export function createPickupPage() {
         <div class="time-picker-overlay" id="timePickerOverlay"></div>
         <div class="time-picker-content">
           <div class="time-picker-header">
-            <h3 class="time-picker-title">Select Time</h3>
+            <h3 class="time-picker-title" id="timePickerTitle">Select Time</h3>
             <button type="button" class="time-picker-close" id="timePickerClose">×</button>
           </div>
           <div class="time-picker-body">
@@ -172,17 +190,31 @@ export function initializePickupPage() {
   const mapButtons = document.querySelectorAll('.map-button');
 
   // Time picker elements
-  const timeSelector = document.getElementById('timeSelector');
-  const periodSelector = document.getElementById('periodSelector');
+  const fromTimeSelector = document.getElementById('fromTimeSelector');
+  const fromPeriodSelector = document.getElementById('fromPeriodSelector');
+  const toTimeSelector = document.getElementById('toTimeSelector');
+  const toPeriodSelector = document.getElementById('toPeriodSelector');
   const timePickerModal = document.getElementById('timePickerModal');
   const timePickerOverlay = document.getElementById('timePickerOverlay');
   const timePickerClose = document.getElementById('timePickerClose');
   const timePickerCancel = document.getElementById('timePickerCancel');
   const timePickerConfirm = document.getElementById('timePickerConfirm');
-  const displayTime = document.getElementById('displayTime');
-  const displayPeriod = document.getElementById('displayPeriod');
+  const timePickerTitle = document.getElementById('timePickerTitle');
+  const displayFromTime = document.getElementById('displayFromTime');
+  const displayFromPeriod = document.getElementById('displayFromPeriod');
+  const displayToTime = document.getElementById('displayToTime');
+  const displayToPeriod = document.getElementById('displayToPeriod');
 
   // Current selected time values
+  let fromHour = 9;
+  let fromMinute = 30;
+  let fromPeriod = 'AM';
+  let toHour = 11;
+  let toMinute = 0;
+  let toPeriod = 'AM';
+
+  // Track which time selector is currently being edited
+  let currentSelector = null; // 'from' or 'to'
   let selectedHour = 9;
   let selectedMinute = 30;
   let selectedPeriod = 'AM';
@@ -194,7 +226,9 @@ export function initializePickupPage() {
     const pickupLocation = pickupLocationInput.value.trim();
     const dropLocation = dropLocationInput.value.trim();
     const numberOfPeople = numberOfPeopleInput.value;
-    const pickupTime = `${selectedHour}:${String(selectedMinute).padStart(2, '0')} ${selectedPeriod}`;
+    const pickupTimeFrom = `${fromHour}:${String(fromMinute).padStart(2, '0')} ${fromPeriod}`;
+    const pickupTimeTo = `${toHour}:${String(toMinute).padStart(2, '0')} ${toPeriod}`;
+    const pickupTimeRange = `${pickupTimeFrom} - ${pickupTimeTo}`;
 
     if (!pickupLocation) {
       alert('Please enter pickup location');
@@ -221,7 +255,7 @@ export function initializePickupPage() {
     console.log('Ride request:', {
       pickupLocation,
       dropLocation,
-      pickupTime,
+      pickupTimeRange,
       numberOfPeople: parseInt(numberOfPeople)
     });
 
@@ -249,9 +283,24 @@ export function initializePickupPage() {
   });
 
   // Time picker functionality
-  function openTimePicker() {
+  function openTimePicker(selectorType) {
+    currentSelector = selectorType;
     timePickerModal.style.display = 'flex';
     document.body.style.overflow = 'hidden';
+
+    // Update modal title
+    timePickerTitle.textContent = `Select ${selectorType === 'from' ? 'From' : 'To'} Time`;
+
+    // Set current values based on selector type
+    if (selectorType === 'from') {
+      selectedHour = fromHour;
+      selectedMinute = fromMinute;
+      selectedPeriod = fromPeriod;
+    } else {
+      selectedHour = toHour;
+      selectedMinute = toMinute;
+      selectedPeriod = toPeriod;
+    }
 
     // Update selected values in picker
     updatePickerSelections();
@@ -260,6 +309,7 @@ export function initializePickupPage() {
   function closeTimePicker() {
     timePickerModal.style.display = 'none';
     document.body.style.overflow = 'auto';
+    currentSelector = null;
   }
 
   function updatePickerSelections() {
@@ -293,22 +343,51 @@ export function initializePickupPage() {
     });
   }
 
-  function updateDisplayTime() {
-    displayTime.textContent = `${selectedHour} : ${String(selectedMinute).padStart(2, '0')}`;
-    displayPeriod.textContent = selectedPeriod;
+  function updateDisplayTimes() {
+    displayFromTime.textContent = `${fromHour} : ${String(fromMinute).padStart(2, '0')}`;
+    displayFromPeriod.textContent = fromPeriod;
+    displayToTime.textContent = `${toHour} : ${String(toMinute).padStart(2, '0')}`;
+    displayToPeriod.textContent = toPeriod;
+  }
+
+  function validateTimeRange() {
+    // Convert times to minutes for comparison
+    const fromTotalMinutes = (fromPeriod === 'PM' && fromHour !== 12 ? fromHour + 12 : fromHour === 12 && fromPeriod === 'AM' ? 0 : fromHour) * 60 + fromMinute;
+    const toTotalMinutes = (toPeriod === 'PM' && toHour !== 12 ? toHour + 12 : toHour === 12 && toPeriod === 'AM' ? 0 : toHour) * 60 + toMinute;
+
+    return toTotalMinutes > fromTotalMinutes;
   }
 
   // Event listeners for time picker
-  timeSelector.addEventListener('click', openTimePicker);
-  periodSelector.addEventListener('click', openTimePicker);
+  fromTimeSelector.addEventListener('click', () => openTimePicker('from'));
+  fromPeriodSelector.addEventListener('click', () => openTimePicker('from'));
+  toTimeSelector.addEventListener('click', () => openTimePicker('to'));
+  toPeriodSelector.addEventListener('click', () => openTimePicker('to'));
   timePickerOverlay.addEventListener('click', closeTimePicker);
   timePickerClose.addEventListener('click', closeTimePicker);
   timePickerCancel.addEventListener('click', closeTimePicker);
 
   timePickerConfirm.addEventListener('click', () => {
-    updateDisplayTime();
+    // Update the appropriate time values based on current selector
+    if (currentSelector === 'from') {
+      fromHour = selectedHour;
+      fromMinute = selectedMinute;
+      fromPeriod = selectedPeriod;
+    } else if (currentSelector === 'to') {
+      toHour = selectedHour;
+      toMinute = selectedMinute;
+      toPeriod = selectedPeriod;
+    }
+
+    // Validate time range
+    if (!validateTimeRange()) {
+      showNotification('To time must be after From time!', 'error');
+      return;
+    }
+
+    updateDisplayTimes();
     closeTimePicker();
-    showNotification('Time updated successfully!');
+    showNotification(`${currentSelector === 'from' ? 'From' : 'To'} time updated successfully!`);
   });
 
   // Handle picker option selections
@@ -340,18 +419,24 @@ export function initializePickupPage() {
       closeTimePicker();
     }
   });
+
+  // Initialize display times
+  updateDisplayTimes();
 }
 
 // Utility function to show notifications
-function showNotification(message) {
+function showNotification(message, type = 'success') {
   const notification = document.createElement('div');
   notification.className = 'notification';
   notification.textContent = message;
+
+  const backgroundColor = type === 'error' ? '#ef4444' : 'var(--orange)';
+
   notification.style.cssText = `
     position: fixed;
     top: 20px;
     right: 20px;
-    background: var(--orange);
+    background: ${backgroundColor};
     color: white;
     padding: 12px 20px;
     border-radius: 8px;
@@ -360,9 +445,9 @@ function showNotification(message) {
     z-index: 1000;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   `;
-  
+
   document.body.appendChild(notification);
-  
+
   setTimeout(() => {
     notification.remove();
   }, 3000);
