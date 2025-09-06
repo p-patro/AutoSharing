@@ -177,12 +177,266 @@ export function createPickupPage() {
           </div>
         </div>
       </div>
+
+      <!-- Map Modal -->
+      <div id="mapModal" class="map-modal">
+        <div class="map-modal-overlay" onclick="closeMapModal()"></div>
+        <div class="map-modal-content">
+          <div class="map-modal-header">
+            <h3 class="map-modal-title">Select Location</h3>
+            <button class="map-modal-close" onclick="closeMapModal()">&times;</button>
+          </div>
+          <div class="map-modal-body">
+            <div class="location-search-container">
+              <input type="text" id="locationSearch" class="location-search-input" placeholder="Search for location...">
+              <div id="searchSuggestions" class="search-suggestions"></div>
+            </div>
+            <div id="mapContainer" class="map-container"></div>
+          </div>
+          <div class="map-modal-footer">
+            <button class="map-cancel-button" onclick="closeMapModal()">Cancel</button>
+            <button class="map-confirm-button" onclick="confirmLocationSelection()">Confirm Location</button>
+          </div>
+        </div>
+      </div>
     </div>
   `;
 }
 
+// Google Maps API integration
+let map = null;
+let marker = null;
+let selectedLocation = null;
+let currentInputType = null; // 'pickup' or 'drop'
+let autocompleteService = null;
+let placesService = null;
+
+function loadGoogleMapsAPI() {
+  // Add Google Maps API script if not already loaded
+   
+  if (!window.google) {
+    const script = document.createElement('script');
+
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_googleAPIkey}&libraries=places&callback=initGoogleMaps`;
+    script.async = true;
+    script.defer = true;
+    document.head.appendChild(script);
+
+    // Set global callback
+    window.initGoogleMaps = initGoogleMaps;
+  } else {
+    initGoogleMaps();
+  }
+}
+
+function initGoogleMaps() {
+  // Initialize autocomplete service
+  autocompleteService = new google.maps.places.AutocompleteService();
+
+  // Initialize the map (hidden initially)
+  const mapContainer = document.getElementById('mapContainer');
+  if (mapContainer) {
+    map = new google.maps.Map(mapContainer, {
+      center: { lat: 20.1481, lng: 85.6753 }, // Default to NIT Rourkela
+      zoom: 15,
+      styles: [
+        {
+          featureType: "poi",
+          elementType: "labels",
+          stylers: [{ visibility: "off" }]
+        }
+      ]
+    });
+
+    placesService = new google.maps.places.PlacesService(map);
+
+    // Add click listener to map
+    map.addListener('click', (event) => {
+      handleMapClick(event.latLng);
+    });
+  }
+}
+
+function openMapModal(inputType) {
+  currentInputType = inputType;
+  const modal = document.getElementById('mapModal');
+  const searchInput = document.getElementById('locationSearch');
+
+  modal.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+
+  // Clear previous search
+  searchInput.value = '';
+  document.getElementById('searchSuggestions').innerHTML = '';
+
+  // Focus on search input
+  setTimeout(() => searchInput.focus(), 100);
+
+  // Setup search functionality
+  setupLocationSearch();
+
+  // Resize map after modal is shown
+  setTimeout(() => {
+    if (map) {
+      google.maps.event.trigger(map, 'resize');
+    }
+  }, 300);
+}
+
+function closeMapModal() {
+  const modal = document.getElementById('mapModal');
+  modal.style.display = 'none';
+  document.body.style.overflow = 'auto';
+  selectedLocation = null;
+  currentInputType = null;
+}
+
+function setupLocationSearch() {
+  const searchInput = document.getElementById('locationSearch');
+  const suggestionsContainer = document.getElementById('searchSuggestions');
+
+  let searchTimeout;
+
+  searchInput.addEventListener('input', (e) => {
+    const query = e.target.value.trim();
+
+    clearTimeout(searchTimeout);
+
+    if (query.length < 2) {
+      suggestionsContainer.innerHTML = '';
+      return;
+    }
+
+    searchTimeout = setTimeout(() => {
+      searchLocations(query);
+    }, 300);
+  });
+}
+
+function searchLocations(query) {
+  if (!autocompleteService) return;
+
+  const request = {
+    input: query,
+    componentRestrictions: { country: 'in' }, // Restrict to India
+    types: ['geocode'] // Only geocoded results
+  };
+
+  autocompleteService.getPlacePredictions(request, (predictions, status) => {
+    const suggestionsContainer = document.getElementById('searchSuggestions');
+
+    if (status === google.maps.places.PlacesServiceStatus.OK && predictions) {
+      suggestionsContainer.innerHTML = '';
+
+      predictions.slice(0, 5).forEach(prediction => {
+        const suggestionElement = document.createElement('div');
+        suggestionElement.className = 'search-suggestion-item';
+        suggestionElement.innerHTML = `
+          <div class="suggestion-main-text">${prediction.structured_formatting.main_text}</div>
+          <div class="suggestion-secondary-text">${prediction.structured_formatting.secondary_text || ''}</div>
+        `;
+
+        suggestionElement.addEventListener('click', () => {
+          selectSuggestion(prediction);
+        });
+
+        suggestionsContainer.appendChild(suggestionElement);
+      });
+    } else {
+      suggestionsContainer.innerHTML = '<div class="no-suggestions">No locations found</div>';
+    }
+  });
+}
+
+function selectSuggestion(prediction) {
+  const request = {
+    placeId: prediction.place_id,
+    fields: ['geometry', 'name', 'formatted_address']
+  };
+
+  placesService.getDetails(request, (place, status) => {
+    if (status === google.maps.places.PlacesServiceStatus.OK) {
+      const location = place.geometry.location;
+
+      selectedLocation = {
+        lat: location.lat(),
+        lng: location.lng(),
+        address: place.formatted_address,
+        name: place.name
+      };
+
+      // Update map
+      map.setCenter(location);
+      map.setZoom(16);
+
+      // Update marker
+      if (marker) {
+        marker.setMap(null);
+      }
+
+      marker = new google.maps.Marker({
+        position: location,
+        map: map,
+        title: place.name,
+        animation: google.maps.Animation.DROP
+      });
+
+      // Update search input
+      document.getElementById('locationSearch').value = place.formatted_address;
+      document.getElementById('searchSuggestions').innerHTML = '';
+    }
+  });
+}
+
+function handleMapClick(latLng) {
+  selectedLocation = {
+    lat: latLng.lat(),
+    lng: latLng.lng()
+  };
+
+  // Update marker
+  if (marker) {
+    marker.setMap(null);
+  }
+
+  marker = new google.maps.Marker({
+    position: latLng,
+    map: map,
+    animation: google.maps.Animation.DROP
+  });
+
+  // Reverse geocoding to get address
+  const geocoder = new google.maps.Geocoder();
+  geocoder.geocode({ location: latLng }, (results, status) => {
+    if (status === 'OK' && results[0]) {
+      selectedLocation.address = results[0].formatted_address;
+      document.getElementById('locationSearch').value = results[0].formatted_address;
+    }
+  });
+}
+
+function confirmLocationSelection() {
+  if (!selectedLocation) {
+    showNotification('Please select a location first', 'error');
+    return;
+  }
+
+  // Update the appropriate input field
+  const inputId = currentInputType === 'pickup' ? 'pickupLocation' : 'dropLocation';
+  const inputElement = document.getElementById(inputId);
+
+  if (inputElement && selectedLocation.address) {
+    inputElement.value = selectedLocation.address;
+  }
+
+  closeMapModal();
+  showNotification('Location selected successfully');
+}
+
 // Pickup page logic
 export function initializePickupPage() {
+  // Initialize Google Maps API
+  loadGoogleMapsAPI();
   const form = document.getElementById('pickupForm');
   const pickupLocationInput = document.getElementById('pickupLocation');
   const dropLocationInput = document.getElementById('dropLocation');
@@ -266,9 +520,10 @@ export function initializePickupPage() {
   });
 
   // Handle map button clicks
-  mapButtons.forEach(button => {
+  mapButtons.forEach((button, index) => {
     button.addEventListener('click', () => {
-      showNotification('Map selection feature coming soon!');
+      const inputType = index === 0 ? 'pickup' : 'drop';
+      openMapModal(inputType);
     });
   });
 
@@ -452,3 +707,8 @@ function showNotification(message, type = 'success') {
     notification.remove();
   }, 3000);
 }
+
+// Make functions globally available
+window.openMapModal = openMapModal;
+window.closeMapModal = closeMapModal;
+window.confirmLocationSelection = confirmLocationSelection;
