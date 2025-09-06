@@ -81,9 +81,13 @@ export function createPickupPage() {
               <label class="time-label">Pick up Time</label>
               <div class="time-selectors">
                 <div class="time-input-container">
-                  <div class="time-input">9 : 30</div>
+                  <button type="button" class="time-input" id="timeSelector">
+                    <span id="displayTime">9 : 30</span>
+                  </button>
                 </div>
-                <div class="period-input">AM</div>
+                <button type="button" class="period-input" id="periodSelector">
+                  <span id="displayPeriod">AM</span>
+                </button>
               </div>
             </div>
 
@@ -106,9 +110,53 @@ export function createPickupPage() {
 
         <!-- Illustration Section -->
         <div class="pickup-illustration-section">
-          <img src="https://api.builder.io/api/v1/image/assets/TEMP/e9b6728136f6cca62b632b249588c1f43c0721ef?width=1440" 
-               alt="Order ride illustration" 
+          <img src="https://api.builder.io/api/v1/image/assets/TEMP/e9b6728136f6cca62b632b249588c1f43c0721ef?width=1440"
+               alt="Order ride illustration"
                class="pickup-illustration">
+        </div>
+      </div>
+
+      <!-- Time Picker Modal -->
+      <div id="timePickerModal" class="time-picker-modal">
+        <div class="time-picker-overlay" id="timePickerOverlay"></div>
+        <div class="time-picker-content">
+          <div class="time-picker-header">
+            <h3 class="time-picker-title">Select Time</h3>
+            <button type="button" class="time-picker-close" id="timePickerClose">×</button>
+          </div>
+          <div class="time-picker-body">
+            <div class="time-picker-section">
+              <label class="time-picker-label">Hour</label>
+              <div class="time-picker-scroll" id="hourPicker">
+                ${Array.from({ length: 12 }, (_, i) => `
+                  <div class="time-picker-option ${i === 8 ? 'selected' : ''}" data-value="${i + 1}">
+                    ${String(i + 1).padStart(2, '0')}
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+            <div class="time-picker-section">
+              <label class="time-picker-label">Minute</label>
+              <div class="time-picker-scroll" id="minutePicker">
+                ${Array.from({ length: 60 }, (_, i) => `
+                  <div class="time-picker-option ${i === 30 ? 'selected' : ''}" data-value="${i}">
+                    ${String(i).padStart(2, '0')}
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+            <div class="time-picker-section">
+              <label class="time-picker-label">Period</label>
+              <div class="time-picker-scroll" id="periodPicker">
+                <div class="time-picker-option selected" data-value="AM">AM</div>
+                <div class="time-picker-option" data-value="PM">PM</div>
+              </div>
+            </div>
+          </div>
+          <div class="time-picker-footer">
+            <button type="button" class="time-picker-cancel" id="timePickerCancel">Cancel</button>
+            <button type="button" class="time-picker-confirm" id="timePickerConfirm">Confirm</button>
+          </div>
         </div>
       </div>
     </div>
@@ -122,33 +170,50 @@ export function initializePickupPage() {
   const dropLocationInput = document.getElementById('dropLocation');
   const numberOfPeopleInput = document.getElementById('numberOfPeople');
   const mapButtons = document.querySelectorAll('.map-button');
-  
+
+  // Time picker elements
+  const timeSelector = document.getElementById('timeSelector');
+  const periodSelector = document.getElementById('periodSelector');
+  const timePickerModal = document.getElementById('timePickerModal');
+  const timePickerOverlay = document.getElementById('timePickerOverlay');
+  const timePickerClose = document.getElementById('timePickerClose');
+  const timePickerCancel = document.getElementById('timePickerCancel');
+  const timePickerConfirm = document.getElementById('timePickerConfirm');
+  const displayTime = document.getElementById('displayTime');
+  const displayPeriod = document.getElementById('displayPeriod');
+
+  // Current selected time values
+  let selectedHour = 9;
+  let selectedMinute = 30;
+  let selectedPeriod = 'AM';
+
   // Handle form submission
   form.addEventListener('submit', (e) => {
     e.preventDefault();
-    
+
     const pickupLocation = pickupLocationInput.value.trim();
     const dropLocation = dropLocationInput.value.trim();
     const numberOfPeople = numberOfPeopleInput.value;
-    
+    const pickupTime = `${selectedHour}:${String(selectedMinute).padStart(2, '0')} ${selectedPeriod}`;
+
     if (!pickupLocation) {
       alert('Please enter pickup location');
       pickupLocationInput.focus();
       return;
     }
-    
+
     if (!dropLocation) {
       alert('Please enter drop location');
       dropLocationInput.focus();
       return;
     }
-    
+
     if (!numberOfPeople || numberOfPeople < 1) {
       alert('Please enter valid number of people');
       numberOfPeopleInput.focus();
       return;
     }
-    
+
     // Show success message
     showNotification('Ride request submitted successfully!');
 
@@ -156,7 +221,7 @@ export function initializePickupPage() {
     console.log('Ride request:', {
       pickupLocation,
       dropLocation,
-      pickupTime: '9:30 AM',
+      pickupTime,
       numberOfPeople: parseInt(numberOfPeople)
     });
 
@@ -165,14 +230,14 @@ export function initializePickupPage() {
       window.showTravelPage();
     }, 1000);
   });
-  
+
   // Handle map button clicks
   mapButtons.forEach(button => {
     button.addEventListener('click', () => {
       showNotification('Map selection feature coming soon!');
     });
   });
-  
+
   // Handle number input validation
   numberOfPeopleInput.addEventListener('input', (e) => {
     const value = parseInt(e.target.value);
@@ -180,6 +245,99 @@ export function initializePickupPage() {
       e.target.value = 1;
     } else if (value > 8) {
       e.target.value = 8;
+    }
+  });
+
+  // Time picker functionality
+  function openTimePicker() {
+    timePickerModal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+
+    // Update selected values in picker
+    updatePickerSelections();
+  }
+
+  function closeTimePicker() {
+    timePickerModal.style.display = 'none';
+    document.body.style.overflow = 'auto';
+  }
+
+  function updatePickerSelections() {
+    // Update hour picker
+    const hourOptions = document.querySelectorAll('#hourPicker .time-picker-option');
+    hourOptions.forEach(option => {
+      option.classList.remove('selected');
+      if (parseInt(option.dataset.value) === selectedHour) {
+        option.classList.add('selected');
+        option.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      }
+    });
+
+    // Update minute picker
+    const minuteOptions = document.querySelectorAll('#minutePicker .time-picker-option');
+    minuteOptions.forEach(option => {
+      option.classList.remove('selected');
+      if (parseInt(option.dataset.value) === selectedMinute) {
+        option.classList.add('selected');
+        option.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      }
+    });
+
+    // Update period picker
+    const periodOptions = document.querySelectorAll('#periodPicker .time-picker-option');
+    periodOptions.forEach(option => {
+      option.classList.remove('selected');
+      if (option.dataset.value === selectedPeriod) {
+        option.classList.add('selected');
+      }
+    });
+  }
+
+  function updateDisplayTime() {
+    displayTime.textContent = `${selectedHour} : ${String(selectedMinute).padStart(2, '0')}`;
+    displayPeriod.textContent = selectedPeriod;
+  }
+
+  // Event listeners for time picker
+  timeSelector.addEventListener('click', openTimePicker);
+  periodSelector.addEventListener('click', openTimePicker);
+  timePickerOverlay.addEventListener('click', closeTimePicker);
+  timePickerClose.addEventListener('click', closeTimePicker);
+  timePickerCancel.addEventListener('click', closeTimePicker);
+
+  timePickerConfirm.addEventListener('click', () => {
+    updateDisplayTime();
+    closeTimePicker();
+    showNotification('Time updated successfully!');
+  });
+
+  // Handle picker option selections
+  document.addEventListener('click', (e) => {
+    if (e.target.classList.contains('time-picker-option')) {
+      const picker = e.target.closest('.time-picker-scroll');
+      const options = picker.querySelectorAll('.time-picker-option');
+
+      // Remove selected class from all options in this picker
+      options.forEach(option => option.classList.remove('selected'));
+
+      // Add selected class to clicked option
+      e.target.classList.add('selected');
+
+      // Update the corresponding value
+      if (picker.id === 'hourPicker') {
+        selectedHour = parseInt(e.target.dataset.value);
+      } else if (picker.id === 'minutePicker') {
+        selectedMinute = parseInt(e.target.dataset.value);
+      } else if (picker.id === 'periodPicker') {
+        selectedPeriod = e.target.dataset.value;
+      }
+    }
+  });
+
+  // Close modal on Escape key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && timePickerModal.style.display === 'flex') {
+      closeTimePicker();
     }
   });
 }
