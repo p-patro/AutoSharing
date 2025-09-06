@@ -1,18 +1,31 @@
 package handlers
 
 import (
-    "encoding/json"
-    "net/http"
-    "AutoSharing_Backend_/internal/models"
-    "AutoSharing-backend/internal/services"
+	"encoding/json"
+	"net/http"
+
+	"AutoSharing_Backend_New/internal/models"
+	"AutoSharing_Backend_New/internal/services"
 )
 
-func FindAutosHandler(w http.ResponseWriter, r *http.Request) {
-    var req models.UserRequest
-    json.NewDecoder(r.Body).Decode(&req)
+type UserHandler struct {
+	AutoService *services.AutoService
+}
 
-    matches := services.FindMatchingAutos(req.Pickup, req.Destination)
+// Constructor
+func NewUserHandler(service *services.AutoService) *UserHandler {
+	return &UserHandler{AutoService: service}
+}
 
-    w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(matches)
+func (h *UserHandler) FindAutosHandler(w http.ResponseWriter, r *http.Request) {
+	var req models.UserRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	matches := h.AutoService.FindAutos(req.Pickup, req.Destination)
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(matches)
 }
