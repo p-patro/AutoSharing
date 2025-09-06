@@ -1,4 +1,117 @@
 // Sign In page component
+
+// Sign In page logic
+export function initializeSignInPage() {
+  const form = document.getElementById('signinForm');
+  const phoneInput = document.getElementById('phoneNumber');
+  const otpGroup = document.getElementById('otpGroup');
+  const otpInput = document.getElementById('otpInput');
+  const submitButton = document.getElementById('submitButton');
+  const createAccountLink = document.getElementById('createAccountLink');
+
+  let otpSent = false;
+  let backendOtp = null; // Store OTP for demo purposes
+
+  // Handle form submission
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    if (!otpSent) {
+      // First click - Get OTP
+      const phoneNumber = phoneInput.value.trim();
+
+      if (phoneNumber.length !== 10 || !/^[0-9]+$/.test(phoneNumber)) {
+        alert('Please enter a valid 10-digit phone number');
+        return;
+      }
+
+      // Send phone to backend
+      try {
+        const response = await fetch('http://localhost:8000/signin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone: phoneNumber })
+        });
+        const result = await response.json();
+
+        if (result.data && result.data.otp) {
+          backendOtp = result.data.otp.toString();
+          otpGroup.style.display = 'block';
+          submitButton.textContent = 'Sign In';
+          otpSent = true;
+          otpInput.focus();
+          showNotification('OTP sent to +91 ' + phoneNumber + ' (Check backend console for demo OTP)');
+        } else if (result.error) {
+          alert(result.error);
+        } else {
+          alert('Unexpected response from server.');
+        }
+      } catch (err) {
+        alert('Network error: ' + err.message);
+      }
+    } else {
+      // Second click - Sign In
+      const otp = otpInput.value.trim();
+
+      if (otp.length !== 6 || !/^[0-9]+$/.test(otp)) {
+        alert('Please enter a valid 6-digit OTP');
+        return;
+      }
+
+      // For demo: compare with backendOtp (in real app, send to backend for verification)
+      if (otp === backendOtp) {
+        showNotification('Successfully signed in!');
+        setTimeout(() => {
+          window.showPickupPage();
+        }, 1500);
+      } else {
+        alert('Incorrect OTP. Please try again.');
+      }
+    }
+  });
+
+  // Handle create account link
+  createAccountLink.addEventListener('click', (e) => {
+    e.preventDefault();
+    window.showCreateAccountPage();
+  });
+
+  // Phone number input validation
+  phoneInput.addEventListener('input', (e) => {
+    e.target.value = e.target.value.replace(/[^0-9]/g, '');
+  });
+
+  // OTP input validation
+  otpInput.addEventListener('input', (e) => {
+    e.target.value = e.target.value.replace(/[^0-9]/g, '');
+  });
+}
+
+// Utility function to show notifications
+function showNotification(message) {
+  const notification = document.createElement('div');
+  notification.className = 'notification';
+  notification.textContent = message;
+  notification.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: var(--orange);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-family: Inter, sans-serif;
+    font-size: 14px;
+    z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  `;
+  document.body.appendChild(notification);
+  setTimeout(() => {
+    notification.remove();
+  }, 3000);
+}
+
+
 export function createSignInPage() {
   return `
     <div class="hero-container">
@@ -70,106 +183,4 @@ export function createSignInPage() {
 }
 
 // Sign In page logic
-export function initializeSignInPage() {
-  const form = document.getElementById('signinForm');
-  const phoneInput = document.getElementById('phoneNumber');
-  const otpGroup = document.getElementById('otpGroup');
-  const otpInput = document.getElementById('otpInput');
-  const submitButton = document.getElementById('submitButton');
-  const createAccountLink = document.getElementById('createAccountLink');
-  
-  let otpSent = false;
-  
-  // Handle form submission
-  form.addEventListener('submit', (e) => {
-    e.preventDefault();
-    
-    if (!otpSent) {
-      // First click - Get OTP
-      const phoneNumber = phoneInput.value.trim();
-      
-      if (phoneNumber.length !== 10 || !/^[0-9]+$/.test(phoneNumber)) {
-        alert('Please enter a valid 10-digit phone number');
-        return;
-      }
-      
-      // Show OTP field and update button
-      otpGroup.style.display = 'block';
-      submitButton.textContent = 'Sign In';
-      otpSent = true;
-      
-      // Focus on OTP input
-      otpInput.focus();
-      
-      // Simulate OTP sent message
-      showNotification('OTP sent to +91 ' + phoneNumber);
-      
-    } else {
-      // Second click - Sign In
-      const otp = otpInput.value.trim();
-      
-      if (otp.length !== 6 || !/^[0-9]+$/.test(otp)) {
-        alert('Please enter a valid 6-digit OTP');
-        return;
-      }
-      
-      // Simulate sign in process
-      showNotification('Signing in...');
-      
-      // Here you would typically make an API call to verify OTP
-      setTimeout(() => {
-        showNotification('Successfully signed in!');
-        // Redirect to pickup page
-        setTimeout(() => {
-          window.showPickupPage();
-        }, 1500);
-      }, 1000);
-    }
-  });
-  
-  // Handle create account link
-  createAccountLink.addEventListener('click', (e) => {
-    e.preventDefault();
-    window.showCreateAccountPage();
-  });
-  
-  // Phone number input validation
-  phoneInput.addEventListener('input', (e) => {
-    // Only allow numbers
-    e.target.value = e.target.value.replace(/[^0-9]/g, '');
-  });
-  
-  // OTP input validation
-  otpInput.addEventListener('input', (e) => {
-    // Only allow numbers
-    e.target.value = e.target.value.replace(/[^0-9]/g, '');
-  });
-}
 
-// Utility function to show notifications
-function showNotification(message) {
-  // Create a simple notification
-  const notification = document.createElement('div');
-  notification.className = 'notification';
-  notification.textContent = message;
-  notification.style.cssText = `
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    background: var(--orange);
-    color: white;
-    padding: 12px 20px;
-    border-radius: 8px;
-    font-family: Inter, sans-serif;
-    font-size: 14px;
-    z-index: 1000;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  `;
-  
-  document.body.appendChild(notification);
-  
-  // Remove notification after 3 seconds
-  setTimeout(() => {
-    notification.remove();
-  }, 3000);
-}

@@ -474,15 +474,15 @@ export function initializePickupPage() {
   let selectedPeriod = 'AM';
 
   // Handle form submission
-  form.addEventListener('submit', (e) => {
+  form.addEventListener('submit', async (e) => { 
     e.preventDefault();
 
-    const pickupLocation = pickupLocationInput.value.trim();
-    const dropLocation = dropLocationInput.value.trim();
-    const numberOfPeople = numberOfPeopleInput.value;
-    const pickupTimeFrom = `${fromHour}:${String(fromMinute).padStart(2, '0')} ${fromPeriod}`;
-    const pickupTimeTo = `${toHour}:${String(toMinute).padStart(2, '0')} ${toPeriod}`;
-    const pickupTimeRange = `${pickupTimeFrom} - ${pickupTimeTo}`;
+  const pickupLocation = pickupLocationInput.value.trim();
+  const dropLocation = dropLocationInput.value.trim();
+  const numberOfPeople = numberOfPeopleInput.value;
+  const pickupTimeFrom = `${fromHour}:${String(fromMinute).padStart(2, '0')} ${fromPeriod}`;
+  const pickupTimeTo = `${toHour}:${String(toMinute).padStart(2, '0')} ${toPeriod}`;
+  const pickupTimeRange = `${pickupTimeFrom} - ${pickupTimeTo}`;
 
     if (!pickupLocation) {
       alert('Please enter pickup location');
@@ -506,12 +506,41 @@ export function initializePickupPage() {
     showNotification('Ride request submitted successfully!');
 
     // Here you would typically make an API call to submit the ride request
-    console.log('Ride request:', {
-      pickupLocation,
-      dropLocation,
-      pickupTimeRange,
-      numberOfPeople: parseInt(numberOfPeople)
-    });
+  // console.log('Ride request:', {
+  //   pickupLocation,
+  //   dropLocation,
+  //   pickupTimeRange,
+  //   numberOfPeople: parseInt(numberOfPeople)
+  // });
+  const data = {
+  pickup_location: pickupLocation,
+  drop_location: dropLocation,
+  time_from: pickupTimeFrom, // or use ISO string if you want
+  time_to: pickupTimeTo,
+  num_people: parseInt(numberOfPeople)
+};
+
+try {
+  const response = await fetch('http://localhost:8000/pickup', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(data)
+  });
+
+  if (response.ok) {
+    showNotification('Ride request submitted successfully!');
+    setTimeout(() => {
+      window.showTravelPage();
+    }, 1000);
+  } else {
+    const error = await response.json();
+    alert('Error: ' + (error.message || 'Could not submit ride request'));
+  }
+} catch (err) {
+  alert('Network error: ' + err.message);
+}
 
     // Redirect to travel page after a short delay
     setTimeout(() => {

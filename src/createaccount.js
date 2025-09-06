@@ -86,24 +86,53 @@ export function initializeCreateAccountPage() {
   const phoneInput = form.querySelector('.phone-number-input');
   
   // Handle form submission
-  form.addEventListener('submit', (e) => {
-    e.preventDefault();
-    
-    const formData = new FormData(form);
-    const phoneNumber = phoneInput.value.trim();
-    
-    // Validate phone number
-    if (phoneNumber.length !== 10 || !/^[0-9]+$/.test(phoneNumber)) {
-      alert('Please enter a valid 10-digit phone number');
-      return;
+  // ...existing code...
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const firstName = form.querySelector('input[placeholder="First name"]').value.trim();
+  const lastName = form.querySelector('input[placeholder="Last name"]').value.trim();
+  const email = form.querySelector('input[type="email"]').value.trim();
+  const phoneNumber = phoneInput.value.trim();
+  const password = "defaultPassword"; // You should add a password field in your form for real use
+
+  // Validate phone number
+  if (phoneNumber.length !== 10 || !/^[0-9]+$/.test(phoneNumber)) {
+    alert('Please enter a valid 10-digit phone number');
+    return;
+  }
+
+  // Prepare data to send
+  const data = {
+  first_name: firstName,
+  last_name: lastName,
+  email: email,
+  password: password, // Replace with actual password from form
+  phone: phoneNumber
+};
+
+  try {
+    const response = await fetch('http://localhost:8000/create-account', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(data)
+    });
+
+    if (response.ok) {
+      alert('Account created successfully! Please sign in.');
+      window.showSignInPage();
+    } else {
+      const error = await response.json();
+      alert('Error: ' + (error.message || 'Could not create account'));
     }
-    
-    // Simulate account creation
-    alert('Account created successfully! Please sign in.');
-    
-    // Redirect to sign in page
-    window.showSignInPage();
-  });
+  } catch (err) {
+    alert('Network error: ' + err.message);
+  }
+});
+
   
   // Handle sign in link
   signInLink.addEventListener('click', (e) => {

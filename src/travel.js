@@ -63,7 +63,7 @@ export function createTravelPage() {
         <!-- Second Solo Rides Section -->
         <div class="solo-rides-section">
           <div class="section-header">
-            <h2 class="section-title">Solo Rides</h2>
+            <h2 class="section-title">Shared Rides</h2>
           </div>
           <div class="rides-list">
             <div class="ride-item ride-item-expanded">
